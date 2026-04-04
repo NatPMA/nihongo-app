@@ -1,0 +1,12 @@
+{
+  "name": "nihongo-app",
+  "version": "1.0.0",
+  "scripts": {
+    "install:all": "cd server && npm install && cd ../client && npm install",
+    "dev": "npx concurrently \"cd server && npm run dev\" \"cd client && npm run dev\"",
+    "start": "npx concurrently \"cd server && npm start\" \"cd client && npm run dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
