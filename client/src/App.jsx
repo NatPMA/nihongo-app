@@ -69,6 +69,23 @@ async function callAPI(system, userMsg) {
   }
 }
 
+/* ══════════ RETRY WRAPPER ══════════ */
+async function withRetry(fn, maxAttempts = 2) {
+  let lastErr;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      const msg = err.message || "";
+      // Never retry on user cancellation or timeout — those are intentional
+      if (msg.includes("Tempo esgotado") || msg.includes("Cancelado")) throw err;
+      if (attempt < maxAttempts) await new Promise(r => setTimeout(r, 1500));
+    }
+  }
+  throw lastErr;
+}
+
 /* ══════════ STORAGE ══════════ */
 const SKEY = "nihongo-v3";
 
@@ -78,6 +95,7 @@ function getDefaults() {
     srs: { nextReview: {} },
     stats: { sessions: [], dailyStreak: 0, lastSessionDate: null, totalCorrect: 0, totalAnswered: 0, categoryHistory: {} },
     reviewQueue: [],
+    cardLibrary: [],
   };
 }
 
@@ -92,6 +110,7 @@ function loadData() {
         srs: Object.assign({ nextReview: {} }, d.srs || {}),
         stats: Object.assign({}, def.stats, d.stats || {}),
         reviewQueue: Array.isArray(d.reviewQueue) ? d.reviewQueue : [],
+        cardLibrary: Array.isArray(d.cardLibrary) ? d.cardLibrary : [],
       };
     }
   } catch (e) { /* ignore */ }
@@ -305,6 +324,15 @@ export default function App() {
   const stats = app.stats || {};
   const sessions = stats.sessions || [];
 
+  // Flashcard library + SRS due-count (used in setup screen)
+  const fcLibrary = app.cardLibrary || [];
+  const srsNR = ((app.srs || {}).nextReview || {});
+  const _fcNow = new Date();
+  const fcDueCount = fcLibrary.filter(c => { const sr = srsNR[c._sid]; return !sr || new Date(sr.next) <= _fcNow; }).length;
+  const fcNextDue = fcLibrary.length > 0 && fcDueCount === 0
+    ? fcLibrary.map(c => srsNR[c._sid]?.next).filter(Boolean).map(d => new Date(d)).filter(d => d > _fcNow).sort((a,b) => a-b)[0]
+    : null;
+
   /* ── GENERATORS ── */
   const genEx = useCallback(async () => {
     setExLoad(true); setExErr(null); setExs([]); setExI(0); setExSel(null); setExExp(false); setExRes([]); setTypVal("");
@@ -312,7 +340,7 @@ export default function App() {
     if (fCats.length) hint += "\nÊnfase: " + fCats.join(",") + ".";
     if (fLvl) hint += "\nFoco: " + fLvl + ".";
     try {
-      const r = await callAPI(EX_SYS, "8 exercícios variados. 1-2 tipo typing." + hint + weakPrompt(app.weaknesses) + " APENAS JSON.");
+      const r = await withRetry(() => callAPI(EX_SYS, "8 exercícios variados. 1-2 tipo typing." + hint + weakPrompt(app.weaknesses) + " APENAS JSON."));
       const safe = sanitizeEx(r);
       if (!safe.length) throw new Error("Nenhum exercício válido");
       setExs(safe); setExScr("playing"); setTimeout(() => setAnim(true), 50);
@@ -323,7 +351,7 @@ export default function App() {
   const genDlg = useCallback(async () => {
     setDlgLoad(true); setDlgErr(null); setDlg(null); setDlgI(0); setDlgSel(null); setDlgExp(false); setDlgRes([]);
     try {
-      const r = await callAPI(DLG_SYS, "Diálogo curto em japonês, 3 falas, 2 perguntas. Situação: " + ["restaurante","estação","loja","escola","hotel"][Math.floor(Math.random()*5)] + ". Nível Básico " + (Math.floor(Math.random()*6)+1) + ". APENAS JSON.");
+      const r = await withRetry(() => callAPI(DLG_SYS, "Diálogo curto em japonês, 3 falas, 2 perguntas. Situação: " + ["restaurante","estação","loja","escola","hotel"][Math.floor(Math.random()*5)] + ". Nível Básico " + (Math.floor(Math.random()*6)+1) + ". APENAS JSON."));
       const safe = sanitizeDlg(r);
       if (!safe || !safe.dialogue || !safe.dialogue.length) throw new Error("Diálogo inválido");
       setDlg(safe); setDlgScr("reading");
@@ -334,20 +362,57 @@ export default function App() {
   const genFc = useCallback(async () => {
     setFcLoad(true); setFcErr(null); setFcs([]); setFcI(0); setFcFlip(false); setFcOk(0); setFcTot(0);
     try {
-      const r = await callAPI(FC_SYS, "8 flashcards variados. APENAS JSON.");
-      const safe = sanitizeFc(r);
-      if (!safe.length) throw new Error("Nenhum flashcard válido");
-      const srs = JSON.parse(JSON.stringify(app.srs || { nextReview: {} }));
-      if (!srs.nextReview) srs.nextReview = {};
-      for (const card of safe) {
-        card._sid = "fc_" + card.front + "_" + card.category;
-        if (!srs.nextReview[card._sid]) srs.nextReview[card._sid] = { level: 0, next: new Date().toISOString() };
+      const now = new Date();
+      const srsData = JSON.parse(JSON.stringify(app.srs || { nextReview: {} }));
+      if (!srsData.nextReview) srsData.nextReview = {};
+      const library = app.cardLibrary || [];
+
+      // Cards already seen whose review date has arrived
+      const dueCards = library.filter(c => {
+        const sr = srsData.nextReview[c._sid];
+        return !sr || new Date(sr.next) <= now;
+      });
+
+      let sessionCards;
+      if (dueCards.length >= 8) {
+        // Full session from due cards — skip API call
+        sessionCards = dueCards.slice(0, 8);
+      } else {
+        // Supplement with freshly generated cards
+        const r = await withRetry(() => callAPI(FC_SYS, "8 flashcards variados. APENAS JSON."));
+        const safe = sanitizeFc(r);
+        if (!safe.length) throw new Error("Nenhum flashcard válido");
+
+        const existingIds = new Set(library.map(c => c._sid));
+        const brandNew = [];
+        for (const card of safe) {
+          card._sid = "fc_" + card.front + "_" + card.category;
+          if (!existingIds.has(card._sid)) {
+            brandNew.push(card);
+            srsData.nextReview[card._sid] = { level: 0, next: now.toISOString() };
+          }
+        }
+
+        // Persist new cards into the library (cap at 300)
+        const updatedLibrary = [...library, ...brandNew].slice(-300);
+        setApp(p => ({ ...p, srs: srsData, cardLibrary: updatedLibrary }));
+
+        sessionCards = [...dueCards, ...brandNew].slice(0, 8);
+
+        if (!sessionCards.length) {
+          // All generated cards were duplicates and nothing is due yet
+          const nextDue = Object.values(srsData.nextReview)
+            .map(rec => rec.next).filter(Boolean).sort()[0];
+          throw new Error(nextDue
+            ? "Ótimo! Todos os cards estão em dia. Volte em " + new Date(nextDue).toLocaleDateString("pt-BR") + "."
+            : "Nenhum flashcard disponível");
+        }
       }
-      setApp(p => ({ ...p, srs }));
-      setFcs(safe); setFcScr("studying");
+
+      setFcs(sessionCards); setFcScr("studying");
     } catch(e) { setFcErr(e.message || "Erro desconhecido"); }
     finally { setFcLoad(false); }
-  }, [app.weaknesses, app.srs]);
+  }, [app.cardLibrary, app.srs, app.weaknesses]);
 
   /* ── ANSWER HANDLERS ── */
   function answerEx(idx) {
@@ -768,8 +833,20 @@ export default function App() {
             <h2 style={{ fontSize:24, fontWeight:800, margin:"16px 0 4px" }}>Flashcards SRS</h2>
             <p style={{ fontSize:14, color:"rgba(255,255,255,0.45)", margin:0 }}>Repetição espaçada</p>
           </div>
-          <div style={{ ...ST.card, marginBottom:16 }}><p style={{ fontSize:13, color:"rgba(255,255,255,0.6)", margin:0, lineHeight:1.7 }}>Errou → volta em 1 dia. Acertou → 1→3→7→14→30→60 dias.</p></div>
-          <button onClick={genFc} style={{ ...ST.pri, background:"linear-gradient(135deg,#E9C46A,#d4a843)", color:"#1a1a2e", boxShadow:"0 6px 24px rgba(233,196,106,0.35)" }}>覚 Começar Sessão</button>
+          <div style={{ ...ST.card, marginBottom:16 }}>
+            <p style={{ fontSize:13, color:"rgba(255,255,255,0.6)", margin:0, lineHeight:1.7 }}>Errou → volta em 1 dia. Acertou → 1→3→7→14→30→60 dias.</p>
+            {fcLibrary.length > 0 && (
+              <div style={{ marginTop:10, paddingTop:10, borderTop:"1px solid rgba(255,255,255,0.08)", fontSize:12, color:"rgba(255,255,255,0.4)" }}>
+                📚 Biblioteca: {fcLibrary.length} card{fcLibrary.length !== 1 ? "s" : ""}
+                {fcDueCount > 0 && <span style={{ color:"#E9C46A", fontWeight:700 }}> · {fcDueCount} para revisar hoje</span>}
+                {fcDueCount === 0 && fcNextDue && <span> · Próxima revisão: {fcNextDue.toLocaleDateString("pt-BR")}</span>}
+                {fcDueCount === 0 && !fcNextDue && <span style={{ color:"#2ecc71" }}> · Tudo em dia ✓</span>}
+              </div>
+            )}
+          </div>
+          <button onClick={genFc} style={{ ...ST.pri, background:"linear-gradient(135deg,#E9C46A,#d4a843)", color:"#1a1a2e", boxShadow:"0 6px 24px rgba(233,196,106,0.35)" }}>
+            {fcDueCount >= 8 ? `覚 Revisar Cards (${fcDueCount})` : "覚 Começar Sessão"}
+          </button>
           {fcErr && <p style={{ color:"#e74c3c", fontSize:12, textAlign:"center", marginTop:8 }}>{fcErr}</p>}
         </div>
       );
