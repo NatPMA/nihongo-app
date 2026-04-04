@@ -1,5 +1,5 @@
 import { ST } from "../styles.js";
-import { LCOL } from "../constants.js";
+import { LCOL, LCOL as LVL_COLORS } from "../constants.js";
 import { recMistake } from "../utils.js";
 import Loader from "../components/Loader.jsx";
 import ErrorCard from "../components/ErrorCard.jsx";
@@ -8,6 +8,7 @@ import OptionBtn from "../components/OptionBtn.jsx";
 
 export default function DialoguesTab({
   dlgLoad, dlgErr, dlgScr, dlg, dlgI, dlgSel, dlgExp, dlgRes,
+  dlgLvl, setDlgLvl,
   genDlg, setDlgScr, setDlgI, setDlgSel, setDlgExp, setDlgRes, upW,
 }) {
   if (dlgLoad) return <Loader label="Gerando diálogo..." onCancel={() => {}} />;
@@ -100,7 +101,26 @@ export default function DialoguesTab({
         <p style={{ fontSize:14, color:"rgba(255,255,255,0.45)", margin:0 }}>Situações reais do dia a dia</p>
       </div>
       <div style={{ ...ST.card, marginBottom:16 }}><p style={{ fontSize:13, color:"rgba(255,255,255,0.6)", margin:0, lineHeight:1.7 }}>Pratique japonês em contexto! Diálogos situacionais com vocabulário e perguntas.</p></div>
-      <button onClick={genDlg} style={{ ...ST.pri, background:"linear-gradient(135deg,#2A9D8F,#1a8a7f)", boxShadow:"0 6px 24px rgba(42,157,143,0.35)" }}>話 Gerar Diálogo</button>
+
+      <div style={{ marginBottom:16 }}>
+        <p style={ST.secLbl}>Nível (opcional):</p>
+        <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+          {[1,2,3,4,5,6].map(n => {
+            const l = "Básico "+n, active = dlgLvl === l;
+            return (
+              <button key={n} onClick={() => setDlgLvl(active ? null : l)}
+                style={{ ...ST.lvlC, background:active?LVL_COLORS[l]:"rgba(255,255,255,0.06)", color:active?(n===3||n===4?"#1a1a2e":"#fff"):"rgba(255,255,255,0.45)", borderColor:active?LVL_COLORS[l]:"rgba(255,255,255,0.1)" }}>
+                B{n}
+              </button>
+            );
+          })}
+        </div>
+        {dlgLvl && <p style={{ fontSize:11, color:"rgba(255,255,255,0.3)", margin:"6px 0 0", fontStyle:"italic" }}>Clique novamente para desmarcar e usar nível aleatório</p>}
+      </div>
+
+      <button onClick={genDlg} style={{ ...ST.pri, background:"linear-gradient(135deg,#2A9D8F,#1a8a7f)", boxShadow:"0 6px 24px rgba(42,157,143,0.35)" }}>
+        {dlgLvl ? `話 Gerar Diálogo — ${dlgLvl}` : "話 Gerar Diálogo"}
+      </button>
       {dlgErr && <ErrorCard message={dlgErr} onRetry={genDlg} />}
     </div>
   );

@@ -44,6 +44,7 @@ export default function App() {
   const [dlgExp, setDlgExp] = useState(false);
   const [dlgRes, setDlgRes] = useState([]);
   const [dlgScr, setDlgScr] = useState("setup");
+  const [dlgLvl, setDlgLvl] = useState(null); // null = random
 
   // Flashcard
   const [fcs, setFcs] = useState([]);
@@ -106,13 +107,17 @@ export default function App() {
   const genDlg = useCallback(async () => {
     setDlgLoad(true); setDlgErr(null); setDlg(null); setDlgI(0); setDlgSel(null); setDlgExp(false); setDlgRes([]);
     try {
-      const r = await withRetry(() => callAPI(DLG_SYS, "Diálogo curto em japonês, 3 falas, 2 perguntas. Situação: " + ["restaurante","estação","loja","escola","hotel"][Math.floor(Math.random()*5)] + ". Nível Básico " + (Math.floor(Math.random()*6)+1) + ". APENAS JSON."));
+      const situations = ["restaurante","estação","loja","escola","hotel"];
+      const sit = situations[Math.floor(Math.random() * situations.length)];
+      // Use chosen level if set, otherwise pick a random one
+      const lvl = dlgLvl ? dlgLvl.replace("Básico ", "") : Math.floor(Math.random()*6)+1;
+      const r = await withRetry(() => callAPI(DLG_SYS, "Diálogo curto em japonês, 3 falas, 2 perguntas. Situação: " + sit + ". Nível Básico " + lvl + ". APENAS JSON."));
       const safe = sanitizeDlg(r);
       if (!safe || !safe.dialogue || !safe.dialogue.length) throw new Error("Diálogo inválido");
       setDlg(safe); setDlgScr("reading");
     } catch(e) { setDlgErr(e.message || "Erro desconhecido"); }
     finally { setDlgLoad(false); }
-  }, []);
+  }, [dlgLvl]);
 
   const genFc = useCallback(async () => {
     setFcLoad(true); setFcErr(null); setFcs([]); setFcI(0); setFcFlip(false); setFcOk(0); setFcTot(0);
@@ -264,6 +269,7 @@ export default function App() {
           <DialoguesTab
             dlgLoad={dlgLoad} dlgErr={dlgErr} dlgScr={dlgScr} dlg={dlg}
             dlgI={dlgI} dlgSel={dlgSel} dlgExp={dlgExp} dlgRes={dlgRes}
+            dlgLvl={dlgLvl} setDlgLvl={setDlgLvl}
             genDlg={genDlg} setDlgScr={setDlgScr} setDlgI={setDlgI}
             setDlgSel={setDlgSel} setDlgExp={setDlgExp} setDlgRes={setDlgRes}
             upW={upW}
