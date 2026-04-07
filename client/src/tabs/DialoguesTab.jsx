@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ST } from "../styles.js";
 import { LCOL, LCOL as LVL_COLORS } from "../constants.js";
 import { recMistake } from "../utils.js";
@@ -11,11 +12,30 @@ export default function DialoguesTab({
   dlgLvl, setDlgLvl,
   genDlg, setDlgScr, setDlgI, setDlgSel, setDlgExp, setDlgRes, upW,
 }) {
+  const [showFuri, setShowFuri] = useState(false);
+
   if (dlgLoad) return <Loader label="Gerando diálogo..." onCancel={() => {}} />;
 
   if (dlgScr === "reading" && dlg) {
     return (
       <div style={ST.page}>
+        {/* Header row: back / toggle / proceed */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+          <button onClick={() => setDlgScr("setup")} style={ST.back}>← Voltar</button>
+          <button
+            onClick={() => setShowFuri(f => !f)}
+            style={{
+              padding:"5px 14px", borderRadius:20, fontSize:12, fontWeight:700,
+              cursor:"pointer", fontFamily:"inherit", border:"1px solid",
+              background: showFuri ? "rgba(42,157,143,0.2)" : "rgba(255,255,255,0.06)",
+              color:        showFuri ? "#5de8d5"              : "rgba(255,255,255,0.45)",
+              borderColor:  showFuri ? "#2A9D8F"              : "rgba(255,255,255,0.1)",
+              transition:"all 0.2s",
+            }}>
+            あ {showFuri ? "ふりがな ✓" : "ふりがな"}
+          </button>
+        </div>
+
         <div style={{ ...ST.card, marginBottom:16 }}>
           <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:8 }}>
             <Badge bg="#2A9D8F">{dlg.situation_jp}</Badge>
@@ -26,8 +46,11 @@ export default function DialoguesTab({
             {dlg.dialogue.map((l, i) => (
               <div key={i} style={{ background:i%2===0?"rgba(69,123,157,0.1)":"rgba(42,157,143,0.1)", borderRadius:12, padding:"12px 14px", borderLeft:"3px solid "+(i%2===0?"#457B9D":"#2A9D8F") }}>
                 <p style={{ fontSize:11, color:"rgba(255,255,255,0.4)", margin:"0 0 4px", fontWeight:600 }}>{l.speaker}</p>
-                <p style={{ fontSize:16, margin:"0 0 4px", color:"#f0f0f0", lineHeight:1.6 }}>{l.text}</p>
-                <p style={{ fontSize:12, color:"rgba(255,255,255,0.35)", margin:"0 0 2px" }}>{l.reading}</p>
+                {/* Reading shown ABOVE the Japanese line when furigana is ON */}
+                {showFuri && l.reading && (
+                  <p style={{ fontSize:11, color:"rgba(255,255,255,0.38)", margin:"0 0 2px", fontFamily:"'Noto Sans JP',sans-serif", letterSpacing:"0.04em", lineHeight:1.5 }}>{l.reading}</p>
+                )}
+                <p style={{ fontSize:16, margin:"0 0 6px", color:"#f0f0f0", lineHeight:1.6 }}>{l.text}</p>
                 <p style={{ fontSize:12, color:"rgba(255,255,255,0.45)", margin:0, fontStyle:"italic" }}>{l.translation}</p>
               </div>
             ))}
@@ -41,7 +64,7 @@ export default function DialoguesTab({
             </div>
           )}
         </div>
-        <button onClick={() => { setDlgScr("exercises"); setDlgI(0); setDlgSel(null); setDlgExp(false); setDlgRes([]); }} style={ST.pri}>Responder perguntas →</button>
+        <button onClick={() => { setDlgScr("exercises"); setDlgI(0); setDlgSel(null); setDlgExp(false); setDlgRes([]); setShowFuri(false); }} style={ST.pri}>Responder perguntas →</button>
       </div>
     );
   }
@@ -87,7 +110,7 @@ export default function DialoguesTab({
           <span style={{ fontSize:48 }}>{dok === dlg.exercises.length ? "🎉" : "📚"}</span>
           <h3 style={{ fontSize:20, margin:"8px 0" }}>{dok}/{dlg.exercises.length} corretas</h3>
         </div>
-        <button onClick={() => { setDlgScr("setup"); genDlg(); }} style={{ ...ST.pri, background:"linear-gradient(135deg,#2A9D8F,#1a8a7f)" }}>話 Novo Diálogo</button>
+        <button onClick={() => { setDlgScr("setup"); setShowFuri(false); genDlg(); }} style={{ ...ST.pri, background:"linear-gradient(135deg,#2A9D8F,#1a8a7f)" }}>話 Novo Diálogo</button>
         <button onClick={() => setDlgScr("setup")} style={ST.ghost}>Voltar</button>
       </div>
     );
