@@ -25,6 +25,7 @@ export function getDefaults() {
     stats: { sessions: [], dailyStreak: 0, lastSessionDate: null, totalCorrect: 0, totalAnswered: 0, categoryHistory: {} },
     reviewQueue: [],
     cardLibrary: [],
+    myLevel: "B6", // ICBJ level id — change when you advance
   };
 }
 
@@ -53,6 +54,7 @@ export function loadData() {
         stats: Object.assign({}, def.stats, d.stats || {}),
         reviewQueue: Array.isArray(d.reviewQueue) ? d.reviewQueue : [],
         cardLibrary: Array.isArray(d.cardLibrary) ? d.cardLibrary : [],
+        myLevel: d.myLevel || "B6",
       };
       // Reset streak if the user missed more than one day
       data.stats = resetStreakIfStale(data.stats);

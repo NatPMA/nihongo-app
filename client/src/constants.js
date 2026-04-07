@@ -18,17 +18,46 @@ export const TABS = [
 ];
 
 /* ══════════ PROMPTS ══════════ */
-export const EX_SYS = `Professor de japonês do ICBJ (Básico 1-6). Gere exercícios em JSON. Sem hiragana/katakana puros.
-Cada exercício: id, category (KANJI|GRAMÁTICA|ESTRUTURA|VOCABULÁRIO), level (Básico 1-6), topic (tópico curto), type (multiple_choice|fill_blank|translate|reading|conjugation|typing), question, options (4), correct (0-3), explanation, accepted_answers (array, só typing).
-B1-2: partículas は/が/を/に/で, ます形, kanji básico. B3-4: て/た/ない形, ている, たことがある, より. B5-6: potencial, passiva, causativa, たら/ば/なら, keigo.
-APENAS array JSON.`;
 
-export const DLG_SYS = `Professor de japonês do ICBJ. Gere 1 diálogo curto (3-4 falas) com 2 perguntas.
-JSON: {"situation":"nome pt","situation_jp":"jp","level":"Básico 1-6","dialogue":[{"speaker":"A","text":"jp","reading":"hira","translation":"pt"}],"exercises":[{"id":1,"question":"..","options":["A","B","C","D"],"correct":0,"explanation":".."}],"vocabulary":[{"word":"..","reading":"..","meaning":".."}]}
-Diálogo CURTO. APENAS JSON, sem texto extra.`;
+// Base system prompt — curriculum-specific content is injected dynamically in App.jsx
+export const EX_SYS_BASE = `Você é professor de japonês do ICBJ (Instituto Cultural Brasil-Japão).
+Gere exatamente 10 exercícios de japonês em JSON para uma aluna que está no nível indicado.
 
-export const FC_SYS = `Professor de japonês do ICBJ. Gere flashcards.
-JSON: [{"id":1,"category":"KANJI|VOCABULÁRIO|GRAMÁTICA","level":"Básico X","front":"jp","back":"pt","reading":"hira","topic":"tópico","hint":"dica"}]
+REGRAS OBRIGATÓRIAS:
+- Kanji: SEMPRE em palavras ou frases com contexto — nunca pergunte leitura isolada. Pergunte o SIGNIFICADO em uso.
+- Tipos de exercício: multiple_choice (4 opções), fill_blank, translate (PT→JP ou JP→PT), conjugation, typing
+- Exercícios de typing aceitam romaji OU hiragana como resposta
+- Explicações em português, claras e didáticas
+- Use APENAS gramática e kanji do currículo fornecido abaixo
+- NÃO invente gramática fora do currículo
+
+DISTRIBUIÇÃO DOS 10 EXERCÍCIOS:
+- 7 exercícios: nível atual + nível anterior (foco principal)
+- 3 exercícios: revisão dos níveis mais antigos
+
+FORMATO JSON OBRIGATÓRIO (array):
+[{
+  "id": 1,
+  "category": "KANJI|GRAMÁTICA|ESTRUTURA|VOCABULÁRIO",
+  "level": "Básico X",
+  "topic": "tópico curto em português",
+  "type": "multiple_choice|fill_blank|translate|conjugation|typing",
+  "question": "texto da pergunta",
+  "options": ["A","B","C","D"],
+  "correct": 0,
+  "explanation": "explicação em português",
+  "accepted_answers": []
+}]
+APENAS o array JSON, sem texto extra.`;
+
+export const DLG_SYS = `Você é professor de japonês do ICBJ. Gere 1 diálogo curto (3-4 falas) situacional com 2 perguntas de compreensão.
+Use APENAS gramática e vocabulário do currículo fornecido na mensagem do usuário.
+JSON: {"situation":"nome pt","situation_jp":"jp","level":"Básico X","dialogue":[{"speaker":"A","text":"jp","reading":"hira","translation":"pt"}],"exercises":[{"id":1,"question":"..","options":["A","B","C","D"],"correct":0,"explanation":".."}],"vocabulary":[{"word":"..","reading":"..","meaning":".."}]}
+Diálogo CURTO e natural. APENAS JSON, sem texto extra.`;
+
+export const FC_SYS = `Você é professor de japonês do ICBJ. Gere flashcards do vocabulário e gramática do currículo fornecido.
+Para kanji: frente = kanji em uma PALAVRA (não isolado), verso = significado em português.
+JSON: [{"id":1,"category":"KANJI|VOCABULÁRIO|GRAMÁTICA","level":"Básico X","front":"jp","back":"pt","reading":"hira","topic":"tópico","hint":"dica opcional"}]
 APENAS JSON.`;
 
 /* ══════════ REFERENCE DATA ══════════ */
@@ -65,21 +94,43 @@ export const PARTICLES = [
   {p:"の",u:"Posse",e:"私の本です。",t:"É meu livro."},
 ];
 
-export const KANJI_LVL = {
-  "Básico 1-2":"一二三四五六七八九十日月年人大小中上下山川田本木水火金土生学校先名何白百千万".split(""),
-  "Básico 3-4":"食飲見聞読書話買行来出入立休言思知持住使作走歩開閉教習会待始終送".split(""),
-  "Básico 5-6":"動働転運強弱早遅長短高安新古多少広近遠重軽明暗".split(""),
-};
-
 export const GRAMMAR = [
-  {l:"B1-2",p:"～は～です",d:"Identidade",e:"これは本です。"},
-  {l:"B1-2",p:"～ます/ません",d:"Forma polida",e:"食べます/食べません"},
-  {l:"B3-4",p:"～て形",d:"Conectiva/pedidos",e:"食べて、飲んで"},
-  {l:"B3-4",p:"～ている",d:"Progressivo/estado",e:"食べている"},
-  {l:"B3-4",p:"～てもいい",d:"Permissão",e:"撮ってもいいですか？"},
-  {l:"B3-4",p:"～てはいけない",d:"Proibição",e:"食べてはいけません"},
-  {l:"B3-4",p:"～たことがある",d:"Experiência",e:"日本に行ったことがある"},
-  {l:"B5-6",p:"～られる",d:"Potencial/passiva",e:"日本語が話せます"},
-  {l:"B5-6",p:"～させる",d:"Causativa",e:"野菜を食べさせる"},
-  {l:"B5-6",p:"～たら/ば/なら",d:"Condicionais",e:"雨が降ったら行きません"},
+  // B1
+  {l:"B1",p:"～は～です / ではありません",d:"Identidade e negação",e:"私は学生です。"},
+  {l:"B1",p:"これ・それ・あれ",d:"Demonstrativos",e:"これは何ですか？"},
+  {l:"B1",p:"～ます / ～ません",d:"Forma polida presente",e:"食べます / 食べません"},
+  {l:"B1",p:"Partículas は・が・を・に・で・へ・と・も・の",d:"Partículas básicas",e:"私は学校に行きます。"},
+  // B2
+  {l:"B2",p:"います・あります",d:"Existência (animado/inanimado)",e:"猫がいます。本があります。"},
+  {l:"B2",p:"い-adjetivos / な-adjetivos",d:"Adjetivos e conjugações",e:"おいしい / 静かな"},
+  {l:"B2",p:"Contadores ～つ・～本・～枚・～冊・～匹",d:"Contagem de objetos",e:"りんごを三つ買いました。"},
+  // B3
+  {l:"B3",p:"て-forma",d:"Conectar ações / pedidos",e:"食べて、飲んでください。"},
+  {l:"B3",p:"～ています",d:"Ação em progresso / estado",e:"今、勉強しています。"},
+  {l:"B3",p:"～てもいいですか",d:"Pedir permissão",e:"写真を撮ってもいいですか？"},
+  {l:"B3",p:"～てはいけません",d:"Proibição",e:"ここで食べてはいけません。"},
+  {l:"B3",p:"あげる・もらう・くれる",d:"Dar e receber (objetos e ações)",e:"友達にプレゼントをあげました。"},
+  // B4
+  {l:"B4",p:"～たことがある / ない",d:"Experiência passada",e:"日本に行ったことがあります。"},
+  {l:"B4",p:"～（ら）れる (potencial)",d:"Conseguir fazer X",e:"日本語が話せます。"},
+  {l:"B4",p:"～たい / ～たくない",d:"Querer / não querer fazer",e:"日本に行きたいです。"},
+  {l:"B4",p:"～ほうがいい",d:"Conselho: é melhor fazer X",e:"早く寝たほうがいいですよ。"},
+  {l:"B4",p:"Oração relativa [V]＋N",d:"Modificação nominal com verbo",e:"昨日買った本はおもしろいです。"},
+  {l:"B4",p:"～と思います",d:"Opinião / reported speech",e:"明日は雨だと思います。"},
+  // B5
+  {l:"B5",p:"～なければなりません",d:"Obrigação: tem que fazer X",e:"薬を飲まなければなりません。"},
+  {l:"B5",p:"～てしまいました",d:"Completude / lamento",e:"財布を忘れてしまいました。"},
+  {l:"B5",p:"～ておきます",d:"Fazer com antecedência",e:"パーティーの前に料理を作っておきます。"},
+  {l:"B5",p:"～てみます",d:"Tentar fazer (experiência)",e:"この料理を食べてみてください。"},
+  {l:"B5",p:"～ようになります",d:"Passar a fazer X (mudança)",e:"日本語が話せるようになりました。"},
+  {l:"B5",p:"Keigo básico (お～します / いらっしゃいます)",d:"Linguagem honorífica",e:"少々お待ちください。"},
+  // B6
+  {l:"B6",p:"形causativa: ～させる / ～させます",d:"Fazer alguém fazer X",e:"先生は学生に漢字を書かせました。"},
+  {l:"B6",p:"～させてください",d:"Pedir licença (humilde)",e:"私にやらせてください。"},
+  {l:"B6",p:"形passiva: ～られる / ～される",d:"Sofrer uma ação",e:"田中さんに財布を盗まれました。"},
+  {l:"B6",p:"Passiva de inconveniência",d:"Sofrer algo indesejado",e:"雨に降られて、びしょぬれになりました。"},
+  {l:"B6",p:"～たら",d:"Condicional: quando/se X acontecer",e:"駅に着いたら、電話してください。"},
+  {l:"B6",p:"～ば",d:"Condicional hipotético formal",e:"お金があれば、旅行します。"},
+  {l:"B6",p:"～と",d:"Condicional natural/automático",e:"春になると、桜が咲きます。"},
+  {l:"B6",p:"～なら",d:"Condicional contextual",e:"日本に行くなら、京都がいいですよ。"},
 ];

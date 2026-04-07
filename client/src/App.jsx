@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 
-import { TABS, EX_SYS, DLG_SYS, FC_SYS } from "./constants.js";
+import { TABS, EX_SYS_BASE, DLG_SYS, FC_SYS } from "./constants.js";
+import { LEVELS, getFocusLevels, getReviewLevels, grammarSummary, kanjiReference } from "./curriculum.js";
 import { ST } from "./styles.js";
 import {
   loadData, saveData, getDefaults, resetStreakIfStale, topWeak,
@@ -89,35 +90,59 @@ export default function App() {
     ? fcLibrary.map(c => srsNR[c._sid]?.next).filter(Boolean).map(d => new Date(d)).filter(d => d > _fcNow).sort((a,b) => a-b)[0]
     : null;
 
+  /* ── CURRICULUM HELPERS ── */
+  const myLvl = app.myLevel || "B6";
+  const focusLevels = getFocusLevels(myLvl);   // e.g. [B5, B6]
+  const reviewLvls  = getReviewLevels(myLvl);   // e.g. [B1, B2, B3, B4]
+  const focusLabel  = focusLevels.map(l => l.label).join(" e ");
+
   /* ── GENERATORS ── */
   const genEx = useCallback(async () => {
     setExLoad(true); setExErr(null); setExs([]); setExI(0); setExSel(null); setExExp(false); setExRes([]); setTypVal("");
-    let hint = "";
-    if (fCats.length) hint += "\nÊnfase: " + fCats.join(",") + ".";
-    if (fLvl) hint += "\nFoco: " + fLvl + ".";
+    const fl = getFocusLevels(myLvl);
+    const rl = getReviewLevels(myLvl);
+    let userMsg = `Aluna está no ${fl[fl.length-1].label} do ICBJ. Gere 10 exercícios no estilo ICBJ.\n\n`;
+    userMsg += `GRAMÁTICA DOS NÍVEIS DE FOCO (${fl.map(l=>l.label).join(" + ")}) — use para 7 dos 10 exercícios:\n`;
+    userMsg += grammarSummary(fl) + "\n\n";
+    if (rl.length) {
+      userMsg += `GRAMÁTICA DE REVISÃO (${rl.map(l=>l.label).join(", ")}) — use para 3 dos 10 exercícios:\n`;
+      userMsg += grammarSummary(rl) + "\n\n";
+    }
+    userMsg += `KANJI DISPONÍVEIS (use sempre em palavras/frases com significado, nunca isolados):\n`;
+    userMsg += kanjiReference(myLvl) + "\n";
+    if (fCats.length) userMsg += `\nÊnfase de categoria: ${fCats.join(", ")}.`;
+    if (fLvl) userMsg += `\nFoco extra no nível: ${fLvl}.`;
+    userMsg += weakPrompt(app.weaknesses);
+    userMsg += "\n\nAPENAS o array JSON.";
     try {
-      const r = await withRetry(() => callAPI(EX_SYS, "8 exercícios variados. 1-2 tipo typing." + hint + weakPrompt(app.weaknesses) + " APENAS JSON."));
+      const r = await withRetry(() => callAPI(EX_SYS_BASE, userMsg));
       const safe = sanitizeEx(r);
       if (!safe.length) throw new Error("Nenhum exercício válido");
       setExs(safe); setExScr("playing"); setTimeout(() => setAnim(true), 50);
     } catch(e) { setExErr(e.message || "Erro desconhecido"); }
     finally { setExLoad(false); }
-  }, [fCats, fLvl, app.weaknesses]);
+  }, [fCats, fLvl, app.weaknesses, myLvl]);
 
   const genDlg = useCallback(async () => {
     setDlgLoad(true); setDlgErr(null); setDlg(null); setDlgI(0); setDlgSel(null); setDlgExp(false); setDlgRes([]);
+    const fl = getFocusLevels(myLvl);
+    const chosenLevel = dlgLvl || fl[fl.length-1].label;
+    const situations = ["restaurante","estação","loja","escola","hotel","hospital","escritório","aeroporto"];
+    const sit = situations[Math.floor(Math.random() * situations.length)];
+    const levelObj = LEVELS.find(l => l.label === chosenLevel) || fl[fl.length-1];
+    let userMsg = `Gere 1 diálogo situacional para aluna do ${chosenLevel} do ICBJ.\n`;
+    userMsg += `Situação: ${sit}.\n`;
+    userMsg += `GRAMÁTICA disponível para este nível:\n${grammarSummary([levelObj])}\n`;
+    userMsg += `Kanji disponíveis (use em palavras/frases): ${kanjiReference(levelObj.id)}\n`;
+    userMsg += "APENAS JSON.";
     try {
-      const situations = ["restaurante","estação","loja","escola","hotel"];
-      const sit = situations[Math.floor(Math.random() * situations.length)];
-      // Use chosen level if set, otherwise pick a random one
-      const lvl = dlgLvl ? dlgLvl.replace("Básico ", "") : Math.floor(Math.random()*6)+1;
-      const r = await withRetry(() => callAPI(DLG_SYS, "Diálogo curto em japonês, 3 falas, 2 perguntas. Situação: " + sit + ". Nível Básico " + lvl + ". APENAS JSON."));
+      const r = await withRetry(() => callAPI(DLG_SYS, userMsg));
       const safe = sanitizeDlg(r);
       if (!safe || !safe.dialogue || !safe.dialogue.length) throw new Error("Diálogo inválido");
       setDlg(safe); setDlgScr("reading");
     } catch(e) { setDlgErr(e.message || "Erro desconhecido"); }
     finally { setDlgLoad(false); }
-  }, [dlgLvl]);
+  }, [dlgLvl, myLvl]);
 
   const genFc = useCallback(async () => {
     setFcLoad(true); setFcErr(null); setFcs([]); setFcI(0); setFcFlip(false); setFcOk(0); setFcTot(0);
@@ -139,7 +164,12 @@ export default function App() {
         sessionCards = dueCards.slice(0, 8);
       } else {
         // Supplement with freshly generated cards
-        const r = await withRetry(() => callAPI(FC_SYS, "8 flashcards variados. APENAS JSON."));
+        const fl = getFocusLevels(myLvl);
+        let fcMsg = `Gere 8 flashcards variados para aluna do ${fl[fl.length-1].label} do ICBJ.\n`;
+        fcMsg += `Para kanji: frente = kanji em uma PALAVRA (ex: 電車、東口), verso = significado em português.\n`;
+        fcMsg += `Gramática disponível:\n${grammarSummary(fl)}\n`;
+        fcMsg += `Kanji disponíveis: ${kanjiReference(myLvl)}\nAPENAS JSON.`;
+        const r = await withRetry(() => callAPI(FC_SYS, fcMsg));
         const safe = sanitizeFc(r);
         if (!safe.length) throw new Error("Nenhum flashcard válido");
 
@@ -172,7 +202,7 @@ export default function App() {
       setFcs(sessionCards); setFcScr("studying");
     } catch(e) { setFcErr(e.message || "Erro desconhecido"); }
     finally { setFcLoad(false); }
-  }, [app.cardLibrary, app.srs, app.weaknesses]);
+  }, [app.cardLibrary, app.srs, app.weaknesses, myLvl]);
 
   /* ── ANSWER HANDLERS ── */
   function answerEx(idx) {
@@ -297,6 +327,8 @@ export default function App() {
         return (
           <StatsTab
             stats={stats} sessions={sessions} hasW={hasW} tw={tw}
+            myLevel={myLvl}
+            onLevelChange={(id) => setApp(p => ({ ...p, myLevel: id }))}
             onClearWeaknesses={() => setApp(p => ({ ...p, weaknesses: { categories:{}, levels:{}, topics:{}, history:[] } }))}
             onReset={() => { if (confirm("Resetar tudo?")) setApp(getDefaults()); }}
           />
