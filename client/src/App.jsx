@@ -123,6 +123,29 @@ export default function App() {
     finally { setExLoad(false); }
   }, [fCats, fLvl, app.weaknesses, myLvl]);
 
+  const genQuickReview = useCallback(async () => {
+    setTab("home");
+    setExLoad(true); setExErr(null); setExs([]); setExI(0); setExSel(null); setExExp(false); setExRes([]); setTypVal("");
+    const fl = getFocusLevels(myLvl);
+    const tw_now = topWeak(app.weaknesses, 6);
+    let userMsg = `Aluna está no ${fl[fl.length-1].label} do ICBJ. Gere EXATAMENTE 5 exercícios curtos e diretos.\n\n`;
+    userMsg += `GRAMÁTICA DISPONÍVEL (${fl.map(l=>l.label).join(" + ")}):\n`;
+    userMsg += grammarSummary(fl) + "\n\n";
+    userMsg += `KANJI DISPONÍVEIS:\n` + kanjiReference(myLvl) + "\n";
+    if (tw_now.length) {
+      userMsg += `\nPONTOS FRACOS — TODOS os 5 exercícios DEVEM focar neles:\n`;
+      userMsg += tw_now.map(x => `- "${x[0]}" (${Math.round(x[1])}x erros)`).join("\n");
+    }
+    userMsg += "\n\nGere APENAS 5 exercícios no array JSON. APENAS o array JSON.";
+    try {
+      const r = await withRetry(() => callAPI(EX_SYS_BASE, userMsg));
+      const safe = sanitizeEx(r).slice(0, 5);
+      if (!safe.length) throw new Error("Nenhum exercício válido");
+      setExs(safe); setExScr("playing"); setTimeout(() => setAnim(true), 50);
+    } catch(e) { setExErr(e.message || "Erro desconhecido"); setExScr("setup"); }
+    finally { setExLoad(false); }
+  }, [app.weaknesses, myLvl]);
+
   const genDlg = useCallback(async () => {
     setDlgLoad(true); setDlgErr(null); setDlg(null); setDlgI(0); setDlgSel(null); setDlgExp(false); setDlgRes([]);
     const fl = getFocusLevels(myLvl);
@@ -322,7 +345,7 @@ export default function App() {
           />
         );
       case "reference":
-        return <ReferenceTab />;
+        return <ReferenceTab myLevel={myLvl} />;
       case "stats":
         return (
           <StatsTab
@@ -331,6 +354,7 @@ export default function App() {
             onLevelChange={(id) => setApp(p => ({ ...p, myLevel: id }))}
             onClearWeaknesses={() => setApp(p => ({ ...p, weaknesses: { categories:{}, levels:{}, topics:{}, history:[] } }))}
             onReset={() => { if (confirm("Resetar tudo?")) setApp(getDefaults()); }}
+            onStartQuickReview={genQuickReview}
           />
         );
       default:

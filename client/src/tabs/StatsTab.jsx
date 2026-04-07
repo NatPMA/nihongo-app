@@ -3,7 +3,13 @@ import { cs } from "../utils.js";
 import { LEVELS } from "../curriculum.js";
 import WeakPanel from "../components/WeakPanel.jsx";
 
-export default function StatsTab({ stats, sessions, hasW, tw, myLevel, onLevelChange, onClearWeaknesses, onReset }) {
+function fmtDate(isoDate) {
+  if (!isoDate) return "";
+  const [, m, d] = isoDate.split("-");
+  return `${parseInt(d)}/${parseInt(m)}`;
+}
+
+export default function StatsTab({ stats, sessions, hasW, tw, myLevel, onLevelChange, onClearWeaknesses, onReset, onStartQuickReview }) {
   const ch = stats.categoryHistory || {};
   const last7 = sessions.slice(-7);
   const avg = last7.length ? Math.round(last7.reduce((a, s) => a + (s.correct/s.total)*100, 0) / last7.length) : 0;
@@ -36,6 +42,8 @@ export default function StatsTab({ stats, sessions, hasW, tw, myLevel, onLevelCh
           Treino cobre <strong style={{color:"rgba(255,255,255,0.6)"}}>{currentLevel.label}</strong> + nível anterior (70%) e revisão B1–{LEVELS[LEVELS.findIndex(l=>l.id===myLevel)-2]?.id || "B1"} (30%)
         </p>
       </div>
+
+      {/* ── STAT CARDS ── */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:20 }}>
         <div style={ST.stCard}><span style={{ fontSize:28, fontWeight:800 }}>{stats.dailyStreak || 0}</span><span style={{ fontSize:12, color:"rgba(255,255,255,0.4)" }}>🔥 Dias seguidos</span></div>
         <div style={ST.stCard}><span style={{ fontSize:28, fontWeight:800 }}>{sessions.length}</span><span style={{ fontSize:12, color:"rgba(255,255,255,0.4)" }}>📝 Sessões</span></div>
@@ -43,6 +51,7 @@ export default function StatsTab({ stats, sessions, hasW, tw, myLevel, onLevelCh
         <div style={ST.stCard}><span style={{ fontSize:28, fontWeight:800 }}>{avg}%</span><span style={{ fontSize:12, color:"rgba(255,255,255,0.4)" }}>📈 Média 7 últ.</span></div>
       </div>
 
+      {/* ── POR CATEGORIA ── */}
       {Object.keys(ch).length > 0 && (
         <div style={{ ...ST.card, marginBottom:16 }}>
           <h3 style={{ fontSize:15, fontWeight:700, margin:"0 0 12px", color:"rgba(255,255,255,0.7)" }}>Por categoria</h3>
@@ -64,9 +73,10 @@ export default function StatsTab({ stats, sessions, hasW, tw, myLevel, onLevelCh
         </div>
       )}
 
+      {/* ── ÚLTIMAS SESSÕES (com datas) ── */}
       {sessions.length > 0 && (
         <div style={{ ...ST.card, marginBottom:16 }}>
-          <h3 style={{ fontSize:15, fontWeight:700, margin:"0 0 12px", color:"rgba(255,255,255,0.7)" }}>Últimas sessões</h3>
+          <h3 style={{ fontSize:15, fontWeight:700, margin:"0 0 16px", color:"rgba(255,255,255,0.7)" }}>Últimas sessões</h3>
           <div style={{ display:"flex", gap:4, alignItems:"flex-end", height:80 }}>
             {sessions.slice(-14).map((s, i) => {
               const p = s.total ? (s.correct/s.total)*100 : 0;
@@ -78,10 +88,27 @@ export default function StatsTab({ stats, sessions, hasW, tw, myLevel, onLevelCh
               );
             })}
           </div>
+          {/* Date labels */}
+          <div style={{ display:"flex", gap:4, marginTop:4 }}>
+            {sessions.slice(-14).map((s, i) => (
+              <div key={i} style={{ flex:1, textAlign:"center" }}>
+                <span style={{ fontSize:8, color:"rgba(255,255,255,0.22)" }}>{fmtDate(s.date)}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
+      {/* ── PONTOS FRACOS + REVISÃO RÁPIDA ── */}
       <WeakPanel tw={tw} hasW={hasW} onClear={onClearWeaknesses} />
+
+      {hasW && (
+        <button onClick={onStartQuickReview}
+          style={{ ...ST.pri, background:"linear-gradient(135deg,#f9ca24,#f0932b)", boxShadow:"0 6px 24px rgba(249,202,36,0.3)", marginBottom:16 }}>
+          ⚡ Revisão Rápida — 5 questões nos pontos fracos
+        </button>
+      )}
+
       <button onClick={onReset} style={{ ...ST.ghost, marginTop:8, fontSize:12, color:"rgba(255,255,255,0.25)" }}>Resetar tudo</button>
     </div>
   );

@@ -60,6 +60,9 @@ Para kanji: frente = kanji em uma PALAVRA (não isolado), verso = significado em
 JSON: [{"id":1,"category":"KANJI|VOCABULÁRIO|GRAMÁTICA","level":"Básico X","front":"jp","back":"pt","reading":"hira","topic":"tópico","hint":"dica opcional"}]
 APENAS JSON.`;
 
+export const KANJI_EX_SYS = `Você é professor de japonês. Dado um kanji e o nível da aluna, gere 1 frase de exemplo curta e natural que usa esse kanji numa palavra real.
+Responda APENAS em JSON (sem texto extra): {"sentence":"frase em japonês","reading":"leitura completa em hiragana","translation":"tradução em português"}`;
+
 /* ══════════ REFERENCE DATA ══════════ */
 export const VERBS = [
   { title:"Grupo 1 (五段)", desc:"Terminam em う段", rows:[
