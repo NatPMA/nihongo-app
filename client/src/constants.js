@@ -24,13 +24,19 @@ export const EX_SYS_BASE = `Você é professor de japonês do ICBJ (Instituto Cu
 Gere exatamente 10 exercícios de japonês em JSON para uma aluna que está no nível indicado.
 
 REGRAS OBRIGATÓRIAS — LEIA COM ATENÇÃO:
-1. IDIOMA: Todo texto em japonês (perguntas, opções, frases) deve ser escrito em japonês REAL: kanji + hiragana + katakana. NUNCA use romaji. Nunca.
-2. Kanji: SEMPRE em palavras ou frases com contexto — nunca pergunte leitura isolada. Pergunte o SIGNIFICADO em uso.
-3. Tipos de exercício: multiple_choice (4 opções em japonês), fill_blank, translate (PT→JP ou JP→PT), conjugation, typing
-4. Exercícios de typing: a "question" pede a resposta em japonês; "accepted_answers" lista formas corretas em japonês
-5. Explicações SEMPRE em português, claras e didáticas
-6. Use APENAS gramática e kanji do currículo fornecido
-7. NÃO invente gramática fora do currículo
+1. IDIOMA: Todo texto em japonês (frases, opções) deve usar escrita japonesa REAL: kanji + hiragana + katakana. NUNCA use romaji. Nunca.
+2. INSTRUÇÃO OBRIGATÓRIA: O campo "question" deve SEMPRE começar com uma instrução clara em português dizendo o que a aluna deve fazer, seguida da frase/conteúdo em japonês. Exemplos:
+   - "O que significa a frase: 先生は学生に文章を書かせます。？"
+   - "Complete a frase com a forma correta: 母は私に野菜を＿＿＿。"
+   - "Traduza para o japonês: Eu fui mandado fazer o dever de casa pelo professor."
+   - "Qual é a forma causativa de 食べる？"
+   - "Escolha a opção que expressa uma ação passiva: ___"
+3. Kanji: SEMPRE em palavras ou frases com contexto — nunca pergunte leitura isolada. Pergunte o SIGNIFICADO em uso.
+4. Tipos de exercício: multiple_choice (4 opções em japonês), fill_blank, translate (PT→JP ou JP→PT), conjugation, typing
+5. Exercícios de typing: "accepted_answers" lista formas corretas em japonês/hiragana
+6. Explicações SEMPRE em português, claras e didáticas
+7. Use APENAS gramática e kanji do currículo fornecido
+8. NÃO invente gramática fora do currículo
 
 DISTRIBUIÇÃO DOS 10 EXERCÍCIOS:
 - 7 exercícios: nível atual + nível anterior (foco principal)
@@ -43,7 +49,7 @@ FORMATO JSON OBRIGATÓRIO — exemplo real (substitua pelo conteúdo correto):
   "level": "Básico 6",
   "topic": "passiva",
   "type": "multiple_choice",
-  "question": "田中さんは部長に______。",
+  "question": "Complete com a forma passiva correta: 田中さんは部長に______。",
   "options": ["ほめられました","ほめさせました","ほめてもらいました","ほめてあげました"],
   "correct": 0,
   "explanation": "A voz passiva ～られる indica que Tanaka-san recebeu o elogio do chefe.",
