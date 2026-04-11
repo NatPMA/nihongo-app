@@ -43,6 +43,7 @@ REGRAS OBRIGATÓRIAS — LEIA COM ATENÇÃO:
 7. Use APENAS gramática e kanji do currículo fornecido
 8. NÃO invente gramática fora do currículo
 9. accepted_answers para fill_blank/typing DEVE incluir a resposta correta em japonês/hiragana para que o app possa verificar
+10. KANJI RESTRITO: use APENAS os kanji da lista fornecida abaixo. NÃO use nenhum kanji que não esteja nessa lista. Se precisar de uma palavra com kanji desconhecido, escreva em hiragana.
 
 DISTRIBUIÇÃO DOS 10 EXERCÍCIOS:
 - 7 exercícios: nível atual + nível anterior (foco principal)

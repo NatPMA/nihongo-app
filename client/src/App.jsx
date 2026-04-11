@@ -108,7 +108,7 @@ export default function App() {
       userMsg += `GRAMÁTICA DE REVISÃO (${rl.map(l=>l.label).join(", ")}) — use para 3 dos 10 exercícios:\n`;
       userMsg += grammarSummary(rl) + "\n\n";
     }
-    userMsg += `KANJI DISPONÍVEIS (use sempre em palavras/frases com significado, nunca isolados):\n`;
+    userMsg += `KANJI PERMITIDOS — use APENAS estes, nunca kanji fora desta lista. Se precisar de palavra com kanji desconhecido, escreva em hiragana:\n`;
     userMsg += kanjiReference(myLvl) + "\n";
     if (fCats.length) userMsg += `\nÊnfase de categoria: ${fCats.join(", ")}.`;
     if (fLvl) userMsg += `\nFoco extra no nível: ${fLvl}.`;
@@ -131,7 +131,7 @@ export default function App() {
     let userMsg = `Aluna está no ${fl[fl.length-1].label} do ICBJ. Gere EXATAMENTE 5 exercícios curtos e diretos.\n\n`;
     userMsg += `GRAMÁTICA DISPONÍVEL (${fl.map(l=>l.label).join(" + ")}):\n`;
     userMsg += grammarSummary(fl) + "\n\n";
-    userMsg += `KANJI DISPONÍVEIS:\n` + kanjiReference(myLvl) + "\n";
+    userMsg += `KANJI PERMITIDOS — APENAS estes, nenhum outro:\n` + kanjiReference(myLvl) + "\n";
     if (tw_now.length) {
       userMsg += `\nPONTOS FRACOS — TODOS os 5 exercícios DEVEM focar neles:\n`;
       userMsg += tw_now.map(x => `- "${x[0]}" (${Math.round(x[1])}x erros)`).join("\n");
@@ -156,7 +156,7 @@ export default function App() {
     let userMsg = `Gere 1 diálogo situacional para aluna do ${chosenLevel} do ICBJ.\n`;
     userMsg += `Situação: ${sit}.\n`;
     userMsg += `GRAMÁTICA disponível para este nível:\n${grammarSummary([levelObj])}\n`;
-    userMsg += `Kanji disponíveis (use em palavras/frases): ${kanjiReference(levelObj.id)}\n`;
+    userMsg += `KANJI PERMITIDOS — APENAS estes (nenhum outro; se precisar de palavra com kanji desconhecido, use hiragana): ${kanjiReference(levelObj.id)}\n`;
     userMsg += "APENAS JSON.";
     try {
       const r = await withRetry(() => callAPI(DLG_SYS, userMsg));
@@ -191,7 +191,7 @@ export default function App() {
         let fcMsg = `Gere 8 flashcards variados para aluna do ${fl[fl.length-1].label} do ICBJ.\n`;
         fcMsg += `Para kanji: frente = kanji em uma PALAVRA (ex: 電車、東口), verso = significado em português.\n`;
         fcMsg += `Gramática disponível:\n${grammarSummary(fl)}\n`;
-        fcMsg += `Kanji disponíveis: ${kanjiReference(myLvl)}\nAPENAS JSON.`;
+        fcMsg += `KANJI PERMITIDOS (APENAS estes, nenhum outro): ${kanjiReference(myLvl)}\nAPENAS JSON.`;
         const r = await withRetry(() => callAPI(FC_SYS, fcMsg));
         const safe = sanitizeFc(r);
         if (!safe.length) throw new Error("Nenhum flashcard válido");
