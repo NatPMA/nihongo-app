@@ -32,8 +32,12 @@ REGRAS OBRIGATÓRIAS — LEIA COM ATENÇÃO:
    - "Qual é a forma causativa de 食べる？"
    - "Escolha a opção que expressa uma ação passiva: ___"
 3. Kanji: SEMPRE em palavras ou frases com contexto — nunca pergunte leitura isolada. Pergunte o SIGNIFICADO em uso.
-4. Tipos de exercício: multiple_choice (4 opções em japonês), fill_blank, translate (PT→JP ou JP→PT), conjugation, typing
-5. Exercícios de typing: "accepted_answers" lista formas corretas em japonês/hiragana
+4. Tipos de exercício e suas regras:
+   - "multiple_choice": OBRIGATÓRIO ter 4 opções reais em japonês no campo "options". NUNCA use ["A","B","C","D"].
+   - "fill_blank": deixe "options" como [] vazio — a aluna digita a resposta. Coloque as respostas corretas em "accepted_answers".
+   - "typing": deixe "options" como [] vazio — a aluna digita. Coloque as respostas corretas em "accepted_answers".
+   - "translate": deixe "options" como [] vazio. Coloque a resposta em "accepted_answers".
+   - "conjugation": pode ser multiple_choice (com 4 opções em japonês) ou typing (sem opções).
 6. Explicações SEMPRE em português, claras e didáticas
 7. Use APENAS gramática e kanji do currículo fornecido
 8. NÃO invente gramática fora do currículo
