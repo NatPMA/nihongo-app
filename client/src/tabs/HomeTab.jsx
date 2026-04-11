@@ -59,13 +59,24 @@ export default function HomeTab({
             </div>
           )}
 
-          {exExp && (
-            <div style={{ marginTop:16, padding:"14px 16px", background:"rgba(0,0,0,0.2)", borderRadius:10, borderLeft:"4px solid "+(lastOk?"#2ecc71":"#e74c3c") }}>
-              <p style={{ fontSize:15, fontWeight:700, margin:"0 0 8px" }}>{lastOk ? "✓ Correto!" : "✗ Incorreto"}</p>
-              <p style={{ fontSize:14, lineHeight:1.6, margin:0, color:"rgba(255,255,255,0.7)" }}>{ex.explanation}</p>
-              {!lastOk && <p style={{ fontSize:11, color:"rgba(42,157,143,0.8)", margin:"8px 0 0", fontStyle:"italic" }}>📌 Reforçado nos próximos treinos</p>}
-            </div>
-          )}
+          {exExp && (() => {
+            // Determine the correct answer text to display
+            const correctText = isTyp
+              ? (ex.accepted_answers && ex.accepted_answers[0]) || (ex.options && ex.options[ex.correct]) || null
+              : (ex.options && ex.options[ex.correct]) || null;
+            return (
+              <div style={{ marginTop:16, padding:"14px 16px", background:"rgba(0,0,0,0.2)", borderRadius:10, borderLeft:"4px solid "+(lastOk?"#2ecc71":"#e74c3c") }}>
+                <p style={{ fontSize:15, fontWeight:700, margin:"0 0 8px" }}>{lastOk ? "✓ Correto!" : "✗ Incorreto"}</p>
+                {!lastOk && correctText && (
+                  <p style={{ fontSize:15, margin:"0 0 8px", color:"#2ecc71", fontFamily:"'Noto Sans JP',sans-serif" }}>
+                    ✅ Resposta correta: <strong>{correctText}</strong>
+                  </p>
+                )}
+                <p style={{ fontSize:14, lineHeight:1.6, margin:0, color:"rgba(255,255,255,0.7)" }}>{ex.explanation}</p>
+                {!lastOk && <p style={{ fontSize:11, color:"rgba(42,157,143,0.8)", margin:"8px 0 0", fontStyle:"italic" }}>📌 Reforçado nos próximos treinos</p>}
+              </div>
+            );
+          })()}
           {exExp && <button onClick={nextEx} style={ST.nxt}>{exI < exs.length-1 ? "Próximo →" : "Ver Resultado"}</button>}
         </div>
       </div>

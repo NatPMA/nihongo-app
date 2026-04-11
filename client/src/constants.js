@@ -31,7 +31,10 @@ REGRAS OBRIGATÓRIAS — LEIA COM ATENÇÃO:
    - "Complete com a forma causativa de 食べる: 母は子供に野菜を＿＿＿。"
    - "Traduza para o japonês: Eu fui mandado fazer o dever de casa pelo professor."
    - "Escolha a opção que expressa uma ação passiva: ___"
-3. FILL_BLANK / TYPING — REGRA EXTRA: Para exercícios de completar/digitar que envolvem conjugação, a question DEVE mencionar o verbo no dicionário (ex: "forma passiva de 食べる", "forma causativa de する"). Nunca deixe a aluna adivinhar qual verbo usar.
+3. FILL_BLANK / TYPING — REGRA EXTRA: Para exercícios de completar/digitar que envolvem conjugação, a question DEVE mencionar o verbo no dicionário entre parênteses imediatamente antes ou depois do blank. Exemplos corretos:
+   - "Complete com a forma de obrigação de 勉強する: 明日は試験があるので、＿＿＿なければなりません。" → accepted_answers: ["勉強し"]
+   - "Complete com ～てしまう de 食べる: ケーキを全部＿＿＿てしまいました。" → accepted_answers: ["食べ"]
+   Nunca deixe a aluna adivinhar qual verbo usar.
 4. Kanji: SEMPRE em palavras ou frases com contexto — nunca pergunte leitura isolada. Pergunte o SIGNIFICADO em uso.
 5. Tipos de exercício e suas regras:
    - "multiple_choice": OBRIGATÓRIO ter 4 opções reais em japonês no campo "options". NUNCA use ["A","B","C","D"].
