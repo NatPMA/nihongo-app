@@ -27,12 +27,13 @@ REGRAS OBRIGATÓRIAS — LEIA COM ATENÇÃO:
 1. IDIOMA: Todo texto em japonês (frases, opções) deve usar escrita japonesa REAL: kanji + hiragana + katakana. NUNCA use romaji. Nunca.
 2. INSTRUÇÃO OBRIGATÓRIA: O campo "question" deve SEMPRE começar com uma instrução clara em português dizendo o que a aluna deve fazer, seguida da frase/conteúdo em japonês. Exemplos:
    - "O que significa a frase: 先生は学生に文章を書かせます。？"
-   - "Complete a frase com a forma correta: 母は私に野菜を＿＿＿。"
+   - "Complete com a forma passiva de ほめる: 田中さんは部長に＿＿＿。"
+   - "Complete com a forma causativa de 食べる: 母は子供に野菜を＿＿＿。"
    - "Traduza para o japonês: Eu fui mandado fazer o dever de casa pelo professor."
-   - "Qual é a forma causativa de 食べる？"
    - "Escolha a opção que expressa uma ação passiva: ___"
-3. Kanji: SEMPRE em palavras ou frases com contexto — nunca pergunte leitura isolada. Pergunte o SIGNIFICADO em uso.
-4. Tipos de exercício e suas regras:
+3. FILL_BLANK / TYPING — REGRA EXTRA: Para exercícios de completar/digitar que envolvem conjugação, a question DEVE mencionar o verbo no dicionário (ex: "forma passiva de 食べる", "forma causativa de する"). Nunca deixe a aluna adivinhar qual verbo usar.
+4. Kanji: SEMPRE em palavras ou frases com contexto — nunca pergunte leitura isolada. Pergunte o SIGNIFICADO em uso.
+5. Tipos de exercício e suas regras:
    - "multiple_choice": OBRIGATÓRIO ter 4 opções reais em japonês no campo "options". NUNCA use ["A","B","C","D"].
    - "fill_blank": deixe "options" como [] vazio — a aluna digita a resposta. Coloque as respostas corretas em "accepted_answers".
    - "typing": deixe "options" como [] vazio — a aluna digita. Coloque as respostas corretas em "accepted_answers".
@@ -41,6 +42,7 @@ REGRAS OBRIGATÓRIAS — LEIA COM ATENÇÃO:
 6. Explicações SEMPRE em português, claras e didáticas
 7. Use APENAS gramática e kanji do currículo fornecido
 8. NÃO invente gramática fora do currículo
+9. accepted_answers para fill_blank/typing DEVE incluir a resposta correta em japonês/hiragana para que o app possa verificar
 
 DISTRIBUIÇÃO DOS 10 EXERCÍCIOS:
 - 7 exercícios: nível atual + nível anterior (foco principal)

@@ -7,7 +7,7 @@ import {
   loadData, saveData, getDefaults, resetStreakIfStale, topWeak,
   callAPI, withRetry,
   sanitizeEx, sanitizeDlg, sanitizeFc,
-  recMistake, recCorrect, weakPrompt, r2h,
+  recMistake, recCorrect, weakPrompt, r2h, normalizeAnswer,
 } from "./utils.js";
 
 import HomeTab from "./tabs/HomeTab.jsx";
@@ -241,11 +241,17 @@ export default function App() {
 
   function answerTyping() {
     const ex = exs[exI]; if (!ex || !typVal.trim()) return;
-    const orig = typVal.trim().toLowerCase(), hira = r2h(orig);
-    const acc = (ex.accepted_answers || []).map(a => (a||"").toLowerCase().trim());
-    const ct = (ex.options && ex.options[ex.correct]) ? ex.options[ex.correct].toLowerCase().trim() : "";
-    const all = [...acc, ct, r2h(ct)].filter(Boolean);
-    const ok = all.some(a => a === orig || a === hira || r2h(a) === hira);
+    // Normalise input: trim + lowercase + romaji→hiragana + katakana→hiragana
+    const normInput  = normalizeAnswer(typVal);
+    const exactInput = typVal.trim().toLowerCase();
+    // Build list of all acceptable answers in both raw and normalised form
+    const accepted  = (ex.accepted_answers || []);
+    const ctRaw     = (ex.options && ex.options[ex.correct]) || "";
+    const allRaw    = [...accepted, ctRaw].filter(Boolean);
+    const ok = allRaw.some(a =>
+      a.trim().toLowerCase() === exactInput ||   // exact match (kanji input)
+      normalizeAnswer(a) === normInput           // normalised: romaji/kata/hira all match
+    );
     setExSel(ok ? ex.correct : -1);
     setExRes(p => [...p, ok]);
     if (ok) { setStreak(s => s+1); upW(w => recCorrect(w, ex)); }

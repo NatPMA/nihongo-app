@@ -48,7 +48,7 @@ export default function HomeTab({
 
           {isTyp && exSel === null ? (
             <div>
-              <input value={typVal} onChange={e => setTypVal(e.target.value)} onKeyDown={e => { if(e.key==="Enter"&&typVal.trim()) answerTyping(); }} placeholder="Romaji ou hiragana..." style={ST.tinput} autoFocus />
+              <input value={typVal} onChange={e => setTypVal(e.target.value)} onKeyDown={e => { if(e.key==="Enter"&&typVal.trim()) answerTyping(); }} placeholder="Digite em japonês ou romaji..." style={ST.tinput} autoFocus />
               <button onClick={answerTyping} disabled={!typVal.trim()} style={{ ...ST.nxt, marginTop:10, opacity:typVal.trim()?1:0.4 }}>Verificar</button>
             </div>
           ) : (
