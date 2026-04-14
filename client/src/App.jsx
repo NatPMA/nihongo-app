@@ -244,14 +244,22 @@ export default function App() {
     // Normalise input: trim + lowercase + romaji→hiragana + katakana→hiragana
     const normInput  = normalizeAnswer(typVal);
     const exactInput = typVal.trim().toLowerCase();
-    // Build list of all acceptable answers in both raw and normalised form
+    // Build list of all acceptable answers
     const accepted  = (ex.accepted_answers || []);
     const ctRaw     = (ex.options && ex.options[ex.correct]) || "";
     const allRaw    = [...accepted, ctRaw].filter(Boolean);
-    const ok = allRaw.some(a =>
-      a.trim().toLowerCase() === exactInput ||   // exact match (kanji input)
-      normalizeAnswer(a) === normInput           // normalised: romaji/kata/hira all match
-    );
+    const ok = allRaw.some(a => {
+      const normA = normalizeAnswer(a);
+      const exactA = a.trim().toLowerCase();
+      return (
+        exactA === exactInput ||      // exact match (kanji)
+        normA  === normInput  ||      // normalised match (romaji/kata/hira)
+        // Safety net: AI sometimes includes post-blank text in the answer.
+        // Accept if input matches the START of the accepted answer up to
+        // where the blank ends (input length covers the conjugated portion).
+        (normA.startsWith(normInput) && normInput.length >= 2)
+      );
+    });
     setExSel(ok ? ex.correct : -1);
     setExRes(p => [...p, ok]);
     if (ok) { setStreak(s => s+1); upW(w => recCorrect(w, ex)); }
