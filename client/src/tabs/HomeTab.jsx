@@ -20,7 +20,7 @@ export default function HomeTab({
     const cst = cs(ex.category);
     const prog = ((exI+1) / exs.length) * 100;
     const isW = ex.topic && (weaknesses.topics || {})[ex.topic] >= 1;
-    const isTyp = ex.type === "typing";
+    const isTyp = ex.type === "typing" || ex.type === "translate";
     const lastOk = exRes.length > 0 ? exRes[exRes.length-1] : null;
 
     return (

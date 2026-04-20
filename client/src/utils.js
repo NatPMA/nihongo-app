@@ -121,23 +121,39 @@ export async function withRetry(fn, maxAttempts = 2) {
 }
 
 /* ══════════ SANITIZERS ══════════ */
+
+// Detect Korean (Hangul) characters — the AI occasionally hallucinates these
+function hasKorean(str) {
+  return /[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]/.test(str || "");
+}
+
+function isCleanExercise(e) {
+  if (!e || !e.question) return false;
+  if (hasKorean(e.question)) return false;
+  if ((e.options || []).some(o => hasKorean(o))) return false;
+  if ((e.accepted_answers || []).some(a => hasKorean(a))) return false;
+  return true;
+}
+
 export function sanitizeEx(arr) {
   if (!Array.isArray(arr)) return [];
-  return arr.filter(e => e && e.question).map((e, i) => {
-    const rawOpts = Array.isArray(e.options) ? e.options.map(o => String(o != null ? o : "")).filter(Boolean) : [];
-    // Detect placeholder single-letter options like ["A","B","C","D"] — treat as empty
-    const isPlaceholder = rawOpts.length > 0 && rawOpts.every(o => /^[A-Da-d]$/.test(o.trim()));
-    const opts = (!isPlaceholder && rawOpts.length >= 2) ? rawOpts : [];
-    // If no valid options, demote to typing so the student gets an input box
-    const type = opts.length >= 2 ? (e.type || "multiple_choice") : "typing";
-    const cor = (typeof e.correct === "number" && e.correct >= 0 && opts.length && e.correct < opts.length) ? e.correct : 0;
-    return {
-      id: e.id || i+1, category: e.category || "VOCABULÁRIO", level: e.level || "Básico 1",
-      topic: e.topic || "", type, question: e.question,
-      options: opts, correct: cor, explanation: e.explanation || "",
-      accepted_answers: Array.isArray(e.accepted_answers) ? e.accepted_answers : [],
-    };
-  });
+  return arr
+    .filter(isCleanExercise)
+    .map((e, i) => {
+      const rawOpts = Array.isArray(e.options) ? e.options.map(o => String(o != null ? o : "")).filter(Boolean) : [];
+      // Reject single-letter placeholder options like ["A","B","C","D"]
+      const isPlaceholder = rawOpts.length > 0 && rawOpts.every(o => /^[A-Da-d]$/.test(o.trim()));
+      const opts = (!isPlaceholder && rawOpts.length >= 2) ? rawOpts : [];
+      // No valid options → translate/typing (student types full sentence)
+      const type = opts.length >= 2 ? (e.type || "multiple_choice") : "translate";
+      const cor = (typeof e.correct === "number" && e.correct >= 0 && opts.length && e.correct < opts.length) ? e.correct : 0;
+      return {
+        id: e.id || i+1, category: e.category || "VOCABULÁRIO", level: e.level || "Básico 1",
+        topic: e.topic || "", type, question: e.question,
+        options: opts, correct: cor, explanation: e.explanation || "",
+        accepted_answers: Array.isArray(e.accepted_answers) ? e.accepted_answers : [],
+      };
+    });
 }
 
 export function sanitizeDlg(d) {

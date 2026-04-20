@@ -19,49 +19,41 @@ export const TABS = [
 
 /* ══════════ PROMPTS ══════════ */
 
-// Base system prompt — curriculum-specific content is injected dynamically in App.jsx
-export const EX_SYS_BASE = `Você é professor de japonês do ICBJ (Instituto Cultural Brasil-Japão).
-Gere exatamente 10 exercícios de japonês em JSON para uma aluna que está no nível indicado.
+// Base system prompt — curriculum content injected dynamically in App.jsx
+export const EX_SYS_BASE = `Você é professor de japonês do ICBJ. Gere exatamente 10 exercícios em JSON.
 
-REGRAS OBRIGATÓRIAS — LEIA COM ATENÇÃO:
-1. IDIOMA JAPONÊS PURO: Todo texto em japonês deve usar APENAS kanji + hiragana + katakana japoneses. NUNCA use romaji. NUNCA use caracteres coreanos (한글/hangul como 생각, 이다 etc) — isso é um erro grave. Se não souber o kanji, escreva em hiragana.
-2. INSTRUÇÃO OBRIGATÓRIA: O campo "question" deve SEMPRE começar com uma instrução clara em português dizendo o que a aluna deve fazer, seguida da frase/conteúdo em japonês. Exemplos:
-   - "O que significa a frase: 先生は学生に文章を書かせます。？"
-   - "Complete com a forma passiva de ほめる: 田中さんは部長に＿＿＿。"
-   - "Escolha a opção que expressa existência animada:"
-3. FILL_BLANK / TYPING — REGRAS CRÍTICAS:
-   a) A question DEVE mencionar o verbo no dicionário entre parênteses. Ex: "...＿＿＿なければなりません。（勉強する）"
-   b) accepted_answers deve conter APENAS o texto que preenche o ＿＿＿, nada mais. NÃO repita texto que já aparece na frase após o blank.
-      - Frase: "私は＿＿＿います。（勉強する）" → accepted_answers: ["勉強して"] — NÃO ["勉強しています"]
-      - Frase: "＿＿＿なければなりません。（勉強する）" → accepted_answers: ["勉強し"] — NÃO ["勉強しなければ"]
-      - Frase: "＿＿＿てしまいました。（食べる）" → accepted_answers: ["食べ"] — NÃO ["食べてしまいました"]
-4. Kanji: SEMPRE em palavras ou frases com contexto — nunca pergunte leitura isolada. Pergunte o SIGNIFICADO em uso.
-5. Tipos de exercício e suas regras:
-   - "multiple_choice": OBRIGATÓRIO 4 opções reais em japonês em "options". NUNCA ["A","B","C","D"].
-   - "fill_blank" / "typing" / "translate": "options" deve ser [] vazio. Respostas em "accepted_answers".
-   - "conjugation": multiple_choice com 4 opções japonesas, ou typing sem opções.
-6. Explicações SEMPRE em português, claras e didáticas.
-7. Use APENAS gramática e kanji do currículo fornecido. NÃO invente gramática fora do currículo.
-8. KANJI RESTRITO: use APENAS os kanji da lista fornecida. Se precisar de kanji fora da lista, escreva em hiragana.
+TIPOS PERMITIDOS (sem exceção):
+• "multiple_choice" — 4 opções reais em japonês. Use para gramática, conjugação, kanji e vocabulário. (8 dos 10 exercícios)
+• "translate" — aluna traduz do português para o japonês. options:[]. accepted_answers:["frase completa em japonês"]. (2 dos 10 exercícios)
+NÃO gere fill_blank, typing, conjugation nem nenhum outro tipo.
 
-DISTRIBUIÇÃO DOS 10 EXERCÍCIOS:
-- 7 exercícios: nível atual + nível anterior (foco principal)
+REGRAS ABSOLUTAS:
+1. SCRIPT: Todo texto japonês usa APENAS kanji/hiragana/katakana. ZERO romaji. ZERO hangul (coreano: 생각, 이다, 한 etc).
+2. INSTRUÇÃO: "question" começa sempre com instrução em português. Ex: "Escolha a forma causativa correta:", "O que significa esta frase:", "Qual opção usa a passiva corretamente:"
+3. OPÇÕES: As 4 opções de multiple_choice são frases ou palavras reais em japonês. NUNCA letras soltas como ["A","B","C","D"].
+4. NÍVEL GRAMATICAL ESTRITO — não misture gramática entre níveis:
+   Básico 5: なければならない、てしまう、ておく、てみる、ようになる、keigo básico
+   Básico 6: させる/させます(causativa)、させてください、られる/される(passiva)、passiva de inconveniência、たら、ば、と、なら
+   → Exercício tagueado como "Básico 6" usa APENAS gramática do Básico 6 acima.
+   → なければなりません é Básico 5. NUNCA aparece em exercício de Básico 6.
+5. KANJI: use apenas os da lista fornecida. Outros → hiragana.
+6. Explicações em português, curtas e didáticas.
+
+DISTRIBUIÇÃO:
+- 7 exercícios: nível atual + anterior (foco principal)
 - 3 exercícios: revisão dos níveis mais antigos
 
-FORMATO JSON OBRIGATÓRIO — exemplo real (substitua pelo conteúdo correto):
-[{
-  "id": 1,
-  "category": "GRAMÁTICA",
-  "level": "Básico 6",
-  "topic": "passiva",
-  "type": "multiple_choice",
-  "question": "Complete com a forma passiva correta: 田中さんは部長に______。",
-  "options": ["ほめられました","ほめさせました","ほめてもらいました","ほめてあげました"],
-  "correct": 0,
-  "explanation": "A voz passiva ～られる indica que Tanaka-san recebeu o elogio do chefe.",
-  "accepted_answers": []
-}]
-APENAS o array JSON, sem texto extra, sem blocos de código.`;
+FORMATO — copie esta estrutura exatamente:
+[
+  {"id":1,"category":"GRAMÁTICA","level":"Básico 6","topic":"passiva","type":"multiple_choice",
+   "question":"Escolha a frase que expressa a voz passiva corretamente:",
+   "options":["田中さんは部長にほめられました","田中さんは部長をほめました","田中さんに部長がほめさせました","田中さんは部長にほめてあげました"],
+   "correct":0,"explanation":"～られる indica que Tanaka-san foi elogiado pelo chefe (recebeu a ação).","accepted_answers":[]},
+  {"id":2,"category":"GRAMÁTICA","level":"Básico 5","topic":"obrigação","type":"translate",
+   "question":"Traduza para o japonês: Preciso estudar porque amanhã há prova.",
+   "options":[],"correct":0,"explanation":"Use ～なければなりません para expressar obrigação.","accepted_answers":["明日は試験があるので、勉強しなければなりません。"]}
+]
+APENAS o array JSON. Sem blocos de código. Sem texto fora do JSON.`;
 
 export const DLG_SYS = `Você é professor de japonês do ICBJ. Gere 1 diálogo curto (3-4 falas) situacional com 2 perguntas de compreensão.
 Use APENAS gramática e vocabulário do currículo fornecido na mensagem do usuário.

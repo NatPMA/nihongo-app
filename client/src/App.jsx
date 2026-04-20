@@ -136,7 +136,7 @@ export default function App() {
       userMsg += `\nPONTOS FRACOS — TODOS os 5 exercícios DEVEM focar neles:\n`;
       userMsg += tw_now.map(x => `- "${x[0]}" (${Math.round(x[1])}x erros)`).join("\n");
     }
-    userMsg += "\n\nGere APENAS 5 exercícios no array JSON. APENAS o array JSON.";
+    userMsg += "\n\nGere APENAS 5 exercícios (todos multiple_choice). APENAS o array JSON.";
     try {
       const r = await withRetry(() => callAPI(EX_SYS_BASE, userMsg));
       const safe = sanitizeEx(r).slice(0, 5);
